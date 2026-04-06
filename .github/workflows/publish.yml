@@ -27,6 +27,10 @@ permissions:
   contents: read
   packages: write
 
+env:
+  # Force JavaScript-based actions to run on Node 24 to avoid Node 20 deprecation breakage.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: postgres-image-publish
   cancel-in-progress: false
