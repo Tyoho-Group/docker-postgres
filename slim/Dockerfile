@@ -5,7 +5,7 @@ FROM postgres:17-bookworm AS builder
 
 ARG PG_UUIDV7_TAG=v1.7.0
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
     ca-certificates \
     git \
     gcc \
