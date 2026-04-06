@@ -29,11 +29,17 @@ FROM postgres:17-bookworm
 
 ARG PG_UUIDV7_TAG=v1.7.0
 
+# Copy only the compiled extension files from the builder stage
 COPY --from=builder /usr/lib/postgresql/17/lib/pg_uuidv7.so \
                     /usr/lib/postgresql/17/lib/pg_uuidv7.so
 COPY --from=builder /usr/share/postgresql/17/extension/pg_uuidv7* \
                     /usr/share/postgresql/17/extension/
 
+# Append to the sample template that initdb copies to postgresql.conf on
+# first container start.  The base image only has the setting commented out,
+# so a plain append is safe.  PostgreSQL also honours the last occurrence of
+# a duplicate setting, so this stays correct even if a future base image
+# uncomments the line.
 RUN echo "shared_preload_libraries = 'pg_uuidv7'" \
       >> /usr/share/postgresql/postgresql.conf.sample
 
