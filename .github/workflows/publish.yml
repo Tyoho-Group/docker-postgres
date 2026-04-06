@@ -26,7 +26,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: postgres-image-publish-${{ matrix.image.key }}
+  group: postgres-image-publish
   cancel-in-progress: false
 
 jobs:
