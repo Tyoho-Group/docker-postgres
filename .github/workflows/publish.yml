@@ -112,7 +112,7 @@ jobs:
 
       - name: Generate OCI labels
         id: labels
-        uses: docker/metadata-action@v5.7.0
+        uses: docker/metadata-action@v6.0.0
         with:
           images: |
             ${{ matrix.image.dockerhub_image }}
