@@ -44,11 +44,9 @@ jobs:
         image:
           - key: secure
             context: ./secure
-            dockerhub_image: lienchen10/tyoho-postgres-uuidv7-secure
             ghcr_image: ghcr.io/tyoho-group/postgres-uuidv7-secure
           - key: slim
             context: ./slim
-            dockerhub_image: lienchen10/tyoho-postgres-uuidv7-slim
             ghcr_image: ghcr.io/tyoho-group/postgres-uuidv7-slim
 
     steps:
@@ -61,11 +59,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.0.0
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v4.1.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
@@ -78,33 +71,28 @@ jobs:
         id: tags
         shell: bash
         env:
-          DOCKERHUB_IMAGE: ${{ matrix.image.dockerhub_image }}
           GHCR_IMAGE: ${{ matrix.image.ghcr_image }}
         run: |
           set -euo pipefail
           timestamp="$(date -u +'%Y%m%d-%H%M')"
           short_sha="${GITHUB_SHA::7}"
 
-          tags="${DOCKERHUB_IMAGE}:${timestamp}"
-          tags="${tags},${DOCKERHUB_IMAGE}:sha-${short_sha}"
-          tags="${tags},${GHCR_IMAGE}:${timestamp}"
+          tags="${GHCR_IMAGE}:${timestamp}"
           tags="${tags},${GHCR_IMAGE}:sha-${short_sha}"
 
-           # On a semver tag push (e.g. v1.0.0), also tag the image with that version
-           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          # On a semver tag push (e.g. v1.0.0), also tag the image with that version
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             semver="${GITHUB_REF#refs/tags/}"
-            tags="${tags},${DOCKERHUB_IMAGE}:${semver}"
             tags="${tags},${GHCR_IMAGE}:${semver}"
-           fi
+          fi
 
-           # Push :latest on schedule, tag push, or manual run with push_latest=true
-           is_tag_push="false"
-           [[ "${GITHUB_REF}" == refs/tags/v* ]] && is_tag_push="true"
+          # Push :latest on schedule, tag push, or manual run with push_latest=true
+          is_tag_push="false"
+          [[ "${GITHUB_REF}" == refs/tags/v* ]] && is_tag_push="true"
 
-           if [[ "${{ github.event_name }}" == "schedule" ]] || \
-             [[ "${is_tag_push}" == "true" ]] || \
-             [[ "${{ github.event.inputs.push_latest || 'true' }}" == "true" ]]; then
-            tags="${tags},${DOCKERHUB_IMAGE}:latest"
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+            [[ "${is_tag_push}" == "true" ]] || \
+            [[ "${{ github.event.inputs.push_latest || 'true' }}" == "true" ]]; then
             tags="${tags},${GHCR_IMAGE}:latest"
           fi
 
@@ -115,7 +103,6 @@ jobs:
         uses: docker/metadata-action@v6.0.0
         with:
           images: |
-            ${{ matrix.image.dockerhub_image }}
             ${{ matrix.image.ghcr_image }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}

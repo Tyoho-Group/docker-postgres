@@ -4,10 +4,12 @@ Public PostgreSQL images with [pg_uuidv7](https://github.com/fboulnois/pg_uuidv7
 
 ## Images
 
-| Variant | Description | Docker Hub | GHCR |
-|---------|-------------|------------|------|
-| **secure** | pg_uuidv7 + startup hardening (disables default superuser) | `lienchen10/tyoho-postgres-uuidv7-secure` | `ghcr.io/tyoho-group/postgres-uuidv7-secure` |
-| **slim** | pg_uuidv7 only | `lienchen10/tyoho-postgres-uuidv7-slim` | `ghcr.io/tyoho-group/postgres-uuidv7-slim` |
+All images are published exclusively to GitHub Container Registry (GHCR).
+
+| Variant | Description | Image |
+|---------|-------------|-------|
+| **secure** | pg_uuidv7 + startup hardening (disables default superuser) | `ghcr.io/tyoho-group/postgres-uuidv7-secure` |
+| **slim** | pg_uuidv7 only | `ghcr.io/tyoho-group/postgres-uuidv7-slim` |
 
 ## Quick start
 
@@ -17,14 +19,14 @@ docker run -d \
   -e POSTGRES_USER=myapp \
   -e POSTGRES_PASSWORD=secret \
   -e POSTGRES_DB=myapp \
-  lienchen10/tyoho-postgres-uuidv7-secure:latest
+  ghcr.io/tyoho-group/postgres-uuidv7-secure:latest
 
 # Slim variant (just the extension)
 docker run -d \
   -e POSTGRES_USER=myapp \
   -e POSTGRES_PASSWORD=secret \
   -e POSTGRES_DB=myapp \
-  lienchen10/tyoho-postgres-uuidv7-slim:latest
+  ghcr.io/tyoho-group/postgres-uuidv7-slim:latest
 ```
 
 Then inside the database:
