@@ -80,19 +80,19 @@ jobs:
           tags="${GHCR_IMAGE}:${timestamp}"
           tags="${tags},${GHCR_IMAGE}:sha-${short_sha}"
 
-           # On a semver tag push (e.g. v1.0.0), also tag the image with that version
-           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          # On a semver tag push (e.g. v1.0.0), also tag the image with that version
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             semver="${GITHUB_REF#refs/tags/}"
             tags="${tags},${GHCR_IMAGE}:${semver}"
-           fi
+          fi
 
-           # Push :latest on schedule, tag push, or manual run with push_latest=true
-           is_tag_push="false"
-           [[ "${GITHUB_REF}" == refs/tags/v* ]] && is_tag_push="true"
+          # Push :latest on schedule, tag push, or manual run with push_latest=true
+          is_tag_push="false"
+          [[ "${GITHUB_REF}" == refs/tags/v* ]] && is_tag_push="true"
 
-           if [[ "${{ github.event_name }}" == "schedule" ]] || \
-             [[ "${is_tag_push}" == "true" ]] || \
-             [[ "${{ github.event.inputs.push_latest || 'true' }}" == "true" ]]; then
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+            [[ "${is_tag_push}" == "true" ]] || \
+            [[ "${{ github.event.inputs.push_latest || 'true' }}" == "true" ]]; then
             tags="${tags},${GHCR_IMAGE}:latest"
           fi
 
