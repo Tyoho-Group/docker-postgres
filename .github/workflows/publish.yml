@@ -6,7 +6,6 @@ on:
     paths:
       - "secure/**"
       - "slim/**"
-      - ".github/workflows/publish.yml"
     tags:
       - "v*.*.*"
   workflow_dispatch:
