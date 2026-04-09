@@ -120,3 +120,31 @@ jobs:
             PG_UUIDV7_TAG=v1.7.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify package linkage and visibility
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GHCR_IMAGE: ${{ matrix.image.ghcr_image }}
+          EXPECTED_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          package_name="${GHCR_IMAGE##*/}"
+          package_json="$(gh api "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${package_name}")"
+
+          visibility="$(jq -r '.visibility' <<<"${package_json}")"
+          linked_repo="$(jq -r '.repository.full_name // empty' <<<"${package_json}")"
+          package_url="$(jq -r '.html_url' <<<"${package_json}")"
+
+          if [[ "${linked_repo}" != "${EXPECTED_REPOSITORY}" ]]; then
+            echo "::error::Package ${package_name} is linked to '${linked_repo}', expected '${EXPECTED_REPOSITORY}'."
+            echo "::error::Open ${package_url} and reconnect the package to ${EXPECTED_REPOSITORY}."
+            exit 1
+          fi
+
+          if [[ "${visibility}" != "public" ]]; then
+            echo "::error::Package ${package_name} visibility is '${visibility}', not 'public'."
+            echo "::error::Open ${package_url}/settings and change visibility to Public."
+            exit 1
+          fi
