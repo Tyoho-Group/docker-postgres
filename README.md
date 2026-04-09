@@ -53,6 +53,15 @@ docker run -e DISABLE_POSTGRES_SUPERUSER=false ...
 
 Images are rebuilt automatically every Monday at 02:15 UTC via GitHub Actions, and on every push to `main` that changes a Dockerfile.
 
+## GHCR visibility
+
+The publish workflow now verifies that each image package:
+
+- is linked to `Tyoho-Group/docker-postgres`
+- has `public` visibility
+
+If a workflow fails on this check, review the package settings before retrying the publish.
+
 ## Tags
 
 - `latest` — most recent build
