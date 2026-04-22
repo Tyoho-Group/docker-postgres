@@ -2,7 +2,6 @@ name: Publish Postgres Images
 
 on:
   push:
-    branches: [main]
     paths:
       - "secure/**"
       - "slim/**"
@@ -20,8 +19,8 @@ on:
           - "true"
           - "false"
   schedule:
-    # Every Monday 02:15 UTC
-    - cron: "15 2 * * 1"
+    # First Monday of each month at 02:15 UTC.
+    - cron: "15 2 1-7 * 1"
 
 permissions:
   contents: read
@@ -30,6 +29,8 @@ permissions:
 env:
   # Force JavaScript-based actions to run on Node 24 to avoid Node 20 deprecation breakage.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+  DOCKER_BUILD_SUMMARY: "false"
 
 concurrency:
   group: postgres-image-publish
@@ -118,8 +119,10 @@ jobs:
           labels: ${{ steps.labels.outputs.labels }}
           build-args: |
             PG_UUIDV7_TAG=v1.7.0
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=${{ matrix.image.key }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.image.key }}
 
       - name: Verify package linkage and visibility
         shell: bash

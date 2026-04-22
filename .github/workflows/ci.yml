@@ -18,6 +18,8 @@ env:
   # breakage on GitHub-hosted runners. Can be removed once all actions used here
   # declare Node 24 as their minimum runtime (check each action's release notes).
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+  DOCKER_BUILD_SUMMARY: "false"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -68,5 +70,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             PG_UUIDV7_TAG=v1.7.0
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=${{ matrix.image.key }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.image.key }}

@@ -1,0 +1,95 @@
+name: Manual Prune GHCR Version Group
+
+on:
+  workflow_dispatch:
+    inputs:
+      timestamp_tag:
+        description: "Timestamp tag to delete, e.g. 20260409-0308"
+        required: true
+      delete_latest_group:
+        description: "Allow deleting the currently tagged latest group"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  prune-group:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package_name:
+          - postgres-uuidv7-secure
+          - postgres-uuidv7-slim
+
+    steps:
+      - name: Validate requested tag
+        shell: bash
+        env:
+          TIMESTAMP_TAG: ${{ github.event.inputs.timestamp_tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TIMESTAMP_TAG" =~ ^20[0-9]{6}-[0-9]{4}$ ]]; then
+            echo "::error::timestamp_tag must look like 20260409-0308"
+            exit 1
+          fi
+
+      - name: Delete complete version group for ${{ matrix.package_name }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_NAME: ${{ matrix.package_name }}
+          TIMESTAMP_TAG: ${{ github.event.inputs.timestamp_tag }}
+          ALLOW_LATEST: ${{ github.event.inputs.delete_latest_group }}
+        run: |
+          set -euo pipefail
+
+          versions_json="$(gh api "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_NAME}/versions?per_page=100")"
+          target_version="$(jq -c --arg tag "$TIMESTAMP_TAG" '.[] | select(any(.metadata.container.tags[]?; . == $tag))' <<<"$versions_json")"
+
+          if [[ -z "$target_version" ]]; then
+            echo "::error::No tagged version found for ${PACKAGE_NAME}:${TIMESTAMP_TAG}"
+            exit 1
+          fi
+
+          if jq -e 'any(.metadata.container.tags[]?; . == "latest")' <<<"$target_version" >/dev/null && [[ "$ALLOW_LATEST" != "true" ]]; then
+            echo "::error::Refusing to delete the current latest group without delete_latest_group=true"
+            exit 1
+          fi
+
+          target_updated_at="$(jq -r '.updated_at' <<<"$target_version")"
+          target_sha_tag="$(jq -r '.metadata.container.tags[]? | select(startswith("sha-"))' <<<"$target_version" | head -n 1)"
+          target_id="$(jq -r '.id' <<<"$target_version")"
+
+          if [[ -z "$target_sha_tag" ]]; then
+            echo "::error::Could not determine the sha-* tag paired with ${TIMESTAMP_TAG}"
+            exit 1
+          fi
+
+          delete_ids="$target_id"
+
+          while IFS= read -r id; do
+            [[ -z "$id" ]] && continue
+            delete_ids="$delete_ids $id"
+          done < <(
+            jq -r \
+              --arg updated_at "$target_updated_at" \
+              --arg sha_tag "$target_sha_tag" \
+              '.[]
+              | select(.updated_at == $updated_at)
+              | select((.metadata.container.tags | length) == 0 or any(.metadata.container.tags[]?; . == $sha_tag))
+              | .id' <<<"$versions_json" \
+              | awk '!seen[$0]++'
+          )
+
+          echo "Deleting version ids for ${PACKAGE_NAME}:${TIMESTAMP_TAG}: $delete_ids"
+          for id in $delete_ids; do
+            gh api -X DELETE "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_NAME}/versions/$id"
+          done
